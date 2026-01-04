@@ -1,0 +1,7 @@
+{"timestamp": "2026-01-05T01:47:56.701787", "risk_score": 0.7741339750141366, "status": "SEIZURE_DETECTED", "metadata": {"status": "\ud83d\udea8 DETECTED (reset in 5s)", "risk": 0.7741339750141366, "counter": 10, "fg_bbox": null}}
+{"timestamp": "2026-01-05T01:48:04.889727", "risk_score": 1.0, "status": "SEIZURE_DETECTED", "metadata": {"status": "\ud83d\udea8 DETECTED (reset in 5s)", "risk": 1.0, "counter": 10, "fg_bbox": null}}
+{"timestamp": "2026-01-05T01:48:28.640947", "risk_score": 1.0, "status": "SEIZURE_DETECTED", "metadata": {"status": "\ud83d\udea8 DETECTED (reset in 5s)", "risk": 1.0, "counter": 10, "fg_bbox": null}}
+{"timestamp": "2026-01-05T01:48:39.195357", "risk_score": 1.0, "status": "SEIZURE_DETECTED", "metadata": {"status": "\ud83d\udea8 DETECTED (reset in 5s)", "risk": 1.0, "counter": 10, "fg_bbox": null}}
+{"timestamp": "2026-01-05T01:49:18.937826", "risk_score": 0.9428284950137837, "status": "SEIZURE_DETECTED", "metadata": {"status": "\ud83d\udea8 DETECTED (reset in 5s)", "risk": 0.9428284950137837, "counter": 10, "fg_bbox": null}}
+{"timestamp": "2026-01-05T01:49:39.249641", "risk_score": 1.0, "status": "SEIZURE_DETECTED", "metadata": {"status": "\ud83d\udea8 DETECTED (reset in 5s)", "risk": 1.0, "counter": 10, "fg_bbox": null}}
+{"timestamp": "2026-01-05T01:49:52.061684", "risk_score": 0.8857452584109271, "status": "SEIZURE_DETECTED", "metadata": {"status": "\ud83d\udea8 DETECTED (reset in 5s)", "risk": 0.8857452584109271, "counter": 10, "fg_bbox": null}}
