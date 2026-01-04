@@ -13,8 +13,8 @@ Key Features:
 
 import config
 
-# 5 seconds display timer at 30fps
-DISPLAY_FRAMES = 150
+# 3 seconds display timer at 30fps (faster reset)
+DISPLAY_FRAMES = 90
 
 
 class DecisionEngine:

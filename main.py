@@ -65,14 +65,28 @@ def main():
         # STEP 1: Person Isolation
         # ----------------------------------------
         # Lock onto the closest person (foreground patient)
-        # This filters out background people and motion
         fg_bbox, fg_roi = person_isolator.get_foreground_roi(frame)
         
-        # Decide what to analyze: ROI if available, else full frame
+        # Validate ROI size - if too small, use full frame
+        # This prevents analyzing tiny noise regions instead of actual person
+        frame_area = frame.shape[0] * frame.shape[1]
+        use_full_frame = True
+        
         if fg_roi is not None and fg_roi.size > 100:
-            analysis_frame = fg_roi
-        else:
+            roi_area = fg_roi.shape[0] * fg_roi.shape[1]
+            roi_ratio = roi_area / frame_area
+            # Only use ROI if it's at least 5% of frame
+            if roi_ratio >= config.MIN_ROI_RATIO:
+                analysis_frame = fg_roi
+                use_full_frame = False
+        
+        if use_full_frame:
             analysis_frame = frame
+            # Don't draw tiny/invalid bounding boxes
+            if fg_bbox is not None:
+                bbox_area = fg_bbox[2] * fg_bbox[3]
+                if bbox_area / frame_area < config.MIN_ROI_RATIO:
+                    fg_bbox = None  # Clear invalid small box
         
         # ----------------------------------------
         # STEP 2: Motion Analysis (FFT Physics)
