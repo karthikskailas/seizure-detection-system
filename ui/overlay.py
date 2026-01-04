@@ -1,4 +1,10 @@
 # ui/overlay.py
+"""
+UI Overlay
+----------
+Draws HUD elements on the video frame including status, motion bar, and alerts.
+"""
+
 import cv2
 import numpy as np
 
@@ -26,19 +32,22 @@ class Overlay:
     def draw_hud(self, frame, motion_score, is_seizure, fall_detected, debug_data):
         h, w = frame.shape[:2]
         
+        # Get status from debug_data
+        status_text = debug_data.get("status", "MONITORING")
+        
+        # Check if we're in "DETECTED" state (from decision engine)
+        is_detected_state = "DETECTED" in status_text
+        
         # 1. Status Bar Background
         cv2.rectangle(frame, (0, 0), (w, 60), (0, 0, 0), -1)
         
-        # 2. Status Text
-        status_color = (0, 255, 0)  # Green
-        status_text = "MONITORING"
-        
-        if is_seizure:
+        # 2. Determine colors based on state
+        if is_seizure or is_detected_state:
             status_color = (0, 0, 255)  # Red
-            status_text = "!! SEIZURE DETECTED !!"
         elif fall_detected:
             status_color = (0, 165, 255)  # Orange
-            status_text = "WARNING: FALL DETECTED"
+        else:
+            status_color = (0, 255, 0)  # Green
 
         cv2.putText(frame, status_text, (20, 40), 
                    cv2.FONT_HERSHEY_SIMPLEX, 1, status_color, 2)
@@ -53,6 +62,38 @@ class Overlay:
         bar_fill = int(motion_score * bar_width)
         cv2.rectangle(frame, (w - 250, 50), (w - 50, 55), (100, 100, 100), -1)
         cv2.rectangle(frame, (w - 250, 50), (w - 250 + bar_fill, 55), status_color, -1)
+
+        # ================================================
+        # 5. BIG SCREEN ALERT (when seizure detected)
+        # ================================================
+        if is_seizure or is_detected_state:
+            # Semi-transparent red overlay
+            overlay = frame.copy()
+            cv2.rectangle(overlay, (0, 0), (w, h), (0, 0, 150), -1)
+            cv2.addWeighted(overlay, 0.3, frame, 0.7, 0, frame)
+            
+            # Big centered alert box
+            box_h = 150
+            box_y = (h - box_h) // 2
+            cv2.rectangle(frame, (50, box_y), (w - 50, box_y + box_h), (0, 0, 200), -1)
+            cv2.rectangle(frame, (50, box_y), (w - 50, box_y + box_h), (255, 255, 255), 3)
+            
+            # Main alert text
+            alert_text = "SEIZURE DETECTED"
+            text_size = cv2.getTextSize(alert_text, cv2.FONT_HERSHEY_SIMPLEX, 2, 4)[0]
+            text_x = (w - text_size[0]) // 2
+            text_y = box_y + 70
+            cv2.putText(frame, alert_text, (text_x, text_y), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 4)
+            
+            # Countdown text (parse from status)
+            if "reset in" in status_text:
+                # Extract the countdown part
+                countdown_text = status_text.split("(")[-1].replace(")", "")
+                countdown_size = cv2.getTextSize(countdown_text, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
+                countdown_x = (w - countdown_size[0]) // 2
+                cv2.putText(frame, countdown_text, (countdown_x, box_y + 120), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 1, (200, 200, 200), 2)
 
         return frame
 

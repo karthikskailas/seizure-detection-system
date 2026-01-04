@@ -1,0 +1,3 @@
+{"timestamp": "2026-01-04T23:30:45.837136", "risk_score": 0.8768423857616539, "status": "SEIZURE_DETECTED", "metadata": {"status": "\ud83d\udea8 DETECTED (reset in 5s)", "risk": 0.8768423857616539, "counter": 20, "fg_bbox": [178, 197, 121, 65]}}
+{"timestamp": "2026-01-04T23:32:05.638500", "risk_score": 1.0, "status": "SEIZURE_DETECTED", "metadata": {"status": "\ud83d\udea8 DETECTED (reset in 5s)", "risk": 1.0, "counter": 20, "fg_bbox": [31, 337, 105, 125]}}
+{"timestamp": "2026-01-04T23:32:30.783913", "risk_score": 0.8382105261556824, "status": "SEIZURE_DETECTED", "metadata": {"status": "\ud83d\udea8 DETECTED (reset in 5s)", "risk": 0.8382105261556824, "counter": 20, "fg_bbox": [102, 396, 90, 84]}}
