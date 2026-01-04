@@ -18,6 +18,7 @@ from core.pose_analyzer import PoseAnalyzer
 from core.decision_engine import DecisionEngine
 from core.event_logger import EventLogger
 from core.person_isolator import ForegroundIsolator
+from core.alert_system import AlertManager
 from ui.overlay import Overlay
 from utils.fps_controller import FPSController
 
@@ -41,16 +42,18 @@ def main():
     
     # Support modules
     logger = EventLogger()
+    alert_manager = AlertManager(cooldown_seconds=config.ALERT_COOLDOWN_SECONDS)
     ui = Overlay()
     fps_control = FPSController(target_fps=config.FPS_ASSUMED)
 
-    print("=" * 50)
+    print("="* 50)
     print("  SEIZURE DETECTION SYSTEM - MVP")
-    print("=" * 50)
+    print("="* 50)
     print(f"  Resolution: {config.RESIZE_WIDTH}px | Buffer: {config.BUFFER_SECONDS}s")
     print(f"  Seizure Band: {config.FREQ_SEIZURE_LOW}-{config.FREQ_SEIZURE_HIGH} Hz")
+    print(f"  Alert Cooldown: {config.ALERT_COOLDOWN_SECONDS}s")
     print("  Press 'q' or ESC to exit.")
-    print("=" * 50)
+    print("="* 50)
 
     # ========================================
     # 2. MAIN PROCESSING LOOP
@@ -115,8 +118,8 @@ def main():
         # ----------------------------------------
         if is_seizure:
             logger.log_event(debug_data)
-            # Audio alert (system beep)
-            print("\a", end="", flush=True)  # Console beep
+            # Comprehensive alert system (audio + WhatsApp/Email)
+            alert_manager.trigger_alert(debug_data)
 
         # ----------------------------------------
         # STEP 6: Visualize (UI Overlay)

@@ -1,0 +1,16 @@
+{
+  "emergency_contact_phone": "+919876543210",
+  "emergency_contact_email": "",
+  "use_whatsapp": true,
+  "use_email_fallback": true,
+  "alert_message": "\u26a0\ufe0f ALERT: Possible seizure detected!",
+  "location_enabled": true,
+  "twilio_account_sid": "",
+  "twilio_auth_token": "",
+  "twilio_whatsapp_from": "whatsapp:+14155238886",
+  "smtp_host": "sandbox.smtp.mailtrap.io",
+  "smtp_port": 2525,
+  "smtp_username": "e0bad2493ee29b",
+  "smtp_password": "cc60f9ddc586c0",
+  "email_from": "seizure-alert@detection.local"
+}
