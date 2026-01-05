@@ -94,7 +94,7 @@ pip install -r requirements.txt
 ##  System Architecture Overview
 
 The system follows a **multi-stage, symptom-based pipeline architecture**:
-![alt text]([http://url/to/img.png](https://image2url.com/r2/default/images/1767535608416-1158a4be-908b-4da4-8d57-ec9ff5a92a5a.png))
+<img src="https://github.com/karthikskailas/demo-testing/blob/master/1767535608416-1158a4be-908b-4da4-8d57-ec9ff5a92a5a.png?raw=true" width="50%">
 
 ## Project Structure
 
@@ -142,7 +142,7 @@ seizure_detection_system/
 - Consecutive video frames are processed using dense optical flow to measure pixel-level movement.
 
 - The average motion magnitude per frame is computed, forming a time-series motion signal.
-![](https://image2url.com/r2/bucket1/images/1767593087855-84a78683-91fc-47e5-b8a3-7f3f244d420f.jpeg)
+<img src="https://github.com/karthikskailas/demo-testing/blob/master/WhatsApp%20Image%202026-01-05%20at%201.38.37%20PM.jpeg?raw=true" width="50%">
 
 **Frequency Band Evaluation**
 
@@ -166,7 +166,7 @@ Overall for the **signal processing**  we convert **video motion** into a **time
 ## Conclusion
 
 The **Real-Time Video-Based Seizure Detection System** represents a transition from a simple prototype to a robust, production-ready assistive tool. By leveraging **motion signal analysis and spectral features**, the system provides a non-invasive, cost-effective solution for seizure monitoring in unsupervised environments—such as homes and hospital wards—without the need for specialized wearable hardware.
-![](https://image2url.com/r2/bucket1/images/1767593285791-1146d527-bd97-454e-9742-45fd25f03c94.jpeg)
+<img src="https://github.com/karthikskailas/demo-testing/blob/master/WhatsApp%20Image%202026-01-05%20at%201.38.51%20PM.jpeg?raw=true" width="50%">
 
 ### Summary of Project Impact
 
