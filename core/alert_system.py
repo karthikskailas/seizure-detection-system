@@ -1,4 +1,3 @@
-# core/alert_system.py
 import os
 import json
 import time

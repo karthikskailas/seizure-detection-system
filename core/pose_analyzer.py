@@ -1,4 +1,9 @@
-# core/pose_analyzer.py
+"""Multi-person pose analysis with patient identification for seizure detection.
+
+Tracks multiple people in frame and identifies the most likely seizure patient
+based on posture, tremor patterns, and positioning.
+"""
+
 import cv2
 import numpy as np
 import config
@@ -10,8 +15,12 @@ from mediapipe.tasks.python import vision
 from collections import deque
 import time
 
+
 class Person:
+    """Represents a tracked person with seizure susceptibility scoring."""
+    
     def __init__(self, person_id):
+        
         self.id = person_id
         self.landmarks = None
         self.world_landmarks = None
@@ -33,6 +42,7 @@ class Person:
         self.last_seen = time.time()
 
     def update(self, landmarks, world_landmarks, segmentation_mask, frame_shape):
+        """Update person state with new detection data."""
         self.landmarks = landmarks
         self.world_landmarks = world_landmarks
         self.segmentation_mask = segmentation_mask
@@ -87,6 +97,7 @@ class Person:
             self.tremor_score = freq_score * 5.0 # Scale to 0-5
             
     def calculate_susceptibility(self, all_people):
+        """Calculate seizure susceptibility score (0-10) based on posture, tremor, and position."""
         score = 0.0
         
         # +3 Posture

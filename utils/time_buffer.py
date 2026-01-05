@@ -1,7 +1,11 @@
-# utils/time_buffer.py
+"""Time buffer for managing event timing windows."""
+
 import time
 
+
 class TimeBuffer:
+    """Tracks timing windows for debouncing events."""
+    
     def __init__(self, duration_seconds):
         self.duration = duration_seconds
         self.last_event_time = 0

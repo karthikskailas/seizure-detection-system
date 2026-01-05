@@ -1,4 +1,3 @@
-# core/foreground_isolator.py
 """
 Foreground Person Isolation Pipeline
 -------------------------------------

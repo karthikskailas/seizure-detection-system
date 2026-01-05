@@ -1,4 +1,3 @@
-# ui/overlay.py
 """
 UI Overlay
 ----------

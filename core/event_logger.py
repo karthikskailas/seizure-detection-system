@@ -1,10 +1,14 @@
-# core/event_logger.py
+"""Event logger for recording seizure detection events."""
+
 import json
 import time
 import os
 from datetime import datetime
 
+
 class EventLogger:
+    """Logs detected seizure events to timestamped JSON files."""
+    
     def __init__(self):
         self.log_dir = "data/logs"
         os.makedirs(self.log_dir, exist_ok=True)

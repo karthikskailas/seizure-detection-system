@@ -1,4 +1,5 @@
-# core/face_analyzer.py
+"""Face analysis for detecting head shaking and facial distortions during seizures."""
+
 import cv2
 import numpy as np
 import os

@@ -1,4 +1,3 @@
-# core/motion_analyzer.py
 import cv2
 import numpy as np
 from scipy.fft import fft, fftfreq

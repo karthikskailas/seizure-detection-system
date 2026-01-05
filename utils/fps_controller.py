@@ -1,7 +1,11 @@
-# utils/fps_controller.py
+"""FPS controller for maintaining consistent frame rate."""
+
 import time
 
+
 class FPSController:
+    """Controls frame rate by sleeping between frames."""
+    
     def __init__(self, target_fps=30):
         self.target_fps = target_fps
         self.frame_duration = 1.0 / target_fps

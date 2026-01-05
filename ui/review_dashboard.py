@@ -1,4 +1,9 @@
-# ui/review_dashboard.py
+"""Streamlit dashboard for reviewing seizure detection events and configuring alerts.
+
+Provides a web interface to view event logs, configure email alerts, and monitor
+system status in real-time.
+"""
+
 import streamlit as st
 import pandas as pd
 import json

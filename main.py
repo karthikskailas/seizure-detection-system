@@ -1,4 +1,9 @@
-# main.py
+"""Real-time video-based seizure detection system.
+
+Integrates motion analysis, pose tracking, face monitoring, and multi-modal
+decision logic to detect potential seizure events and trigger alerts.
+"""
+
 import cv2
 import sys
 import numpy as np

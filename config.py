@@ -1,4 +1,5 @@
-# config.py
+"""Configuration constants for the seizure detection system."""
+
 RESIZE_WIDTH = 320
 FPS_ASSUMED = 30
 BUFFER_SECONDS = 3.0
