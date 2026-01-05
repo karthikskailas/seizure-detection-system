@@ -17,6 +17,7 @@ from core.event_logger import EventLogger
 from core.person_isolator import ForegroundIsolator
 from core.alert_system import AlertManager
 from ui.overlay import Overlay
+from ui.video_controls import VideoControlPanel
 from utils.fps_controller import FPSController
 
 
@@ -39,17 +40,38 @@ def main():
         audio_duration=config.ALERT_SOUND_DURATION
     )
     ui = Overlay()
+    video_controls = VideoControlPanel(window_name='Seizure Detection')
     fps_control = FPSController(target_fps=config.FPS_ASSUMED)
 
     print("=" * 40)
     print("SEIZURE DETECTION SYSTEM")
     print("RUNNING")
     print("=" * 40)
+    
+    # Create window and setup video controls
+    cv2.namedWindow('Seizure Detection', cv2.WINDOW_NORMAL)
+    video_controls.setup_mouse_callback()
+
 
     while cap.isOpened():
+        # Check if user clicked stop button
+        if video_controls.is_stopped():
+            break
+        
         ret, frame = cap.read()
         if not ret:
             break
+        
+        # If paused, just display the frame with controls and skip processing
+        if video_controls.is_paused():
+            display_frame = frame.copy()
+            display_frame = video_controls.draw_controls(display_frame)
+            cv2.imshow('Seizure Detection', display_frame)
+            
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q') or key == 27:
+                break
+            continue
 
         # 1. Background Subtraction / Motion
         fg_bbox, fg_roi = person_isolator.get_foreground_roi(frame)
@@ -108,6 +130,9 @@ def main():
         
         display_frame = ui.draw_hud(base_display, debug_data['risk'], is_seizure, is_fallen, debug_data)
         person_isolator.draw_foreground_box(display_frame, fg_bbox, label="MOTION TARGET")
+        
+        # Draw video controls
+        display_frame = video_controls.draw_controls(display_frame)
         
         if pose_results and pose_results.pose_landmarks:
             # We don't need to draw skeleton again if PoseAnalyzer did it, but Overlay.draw_skeleton is useful
