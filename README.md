@@ -174,9 +174,13 @@ The **Real-Time Video-Based Seizure Detection System** represents a transition f
 * **Performance Optimization:** The entire pipeline is engineered to run efficiently on **standard CPU-only systems**, ensuring high-performance monitoring is accessible even without expensive GPU hardware.
 * **Maintainability and Scalability:** Adopting a **self-documenting code** approach—using descriptive names like `is_person_detected` and `motion_analyzer.py`—ensures that the system is easy to maintain and that knowledge transfer between team members is seamless.
 
+## Video
+
+Link : https://drive.google.com/drive/folders/1wXSsbB9yrYXLGj-yw8lmBhFZJLKhWUra?usp=drive_link
 
 ### Final Word
 
 As outlined in our documentation standards, a clear roadmap and structured logic separate a hobbyist effort from a production-ready solution. This system provides a **scalable, maintainable, and transparent framework** designed to enhance the safety of individuals prone to convulsive events while supporting the vital work of caregivers.
+
 
 > **Disclaimer:** This system is an assistive alert tool designed to support caregivers and monitoring staff; it is not a medical diagnostic device.
