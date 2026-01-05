@@ -167,27 +167,68 @@ class LocationService:
 class AudioAlert:
     """
     Plays loud audible alarm when seizure is detected.
+    Supports MP3 playback via pygame with winsound/console fallback.
     Non-blocking implementation using threading.
-    Works offline (no internet required).
     """
     
-    # Frequencies for alarm sound (Hz)
-    ALARM_FREQUENCIES = [880, 1100, 880, 1100]  # Alternating tones
-    TONE_DURATION_MS = 300  # Duration per tone
+    # Frequencies for alarm sound (Hz) for fallback
+    ALARM_FREQUENCIES = [880, 1100, 880, 1100]
+    TONE_DURATION_MS = 300
+    MP3_PATH = "data/alert_sound.mp3"
     
     def __init__(self, duration_seconds: int = 5):
         self.duration_seconds = duration_seconds
         self._is_playing = False
         self._stop_flag = threading.Event()
         self._play_thread: Optional[threading.Thread] = None
+        self._use_pygame = False
+        
+        # Initialize pygame mixer
+        try:
+            import pygame
+            pygame.mixer.init()
+            if os.path.exists(self.MP3_PATH):
+                pygame.mixer.music.load(self.MP3_PATH)
+                self._use_pygame = True
+                print(f"[AUDIO] MP3 alert loaded: {self.MP3_PATH}")
+            else:
+                print(f"[AUDIO] MP3 file not found at {self.MP3_PATH}, using fallback")
+        except ImportError:
+            print("[AUDIO] pygame not installed, using fallback")
+        except Exception as e:
+            print(f"[AUDIO] pygame init failed: {e}, using fallback")
     
     def play(self):
         """Play alarm sound (blocking)."""
-        if not HAS_WINSOUND:
-            print("[AUDIO] winsound not available, using console beeps")
+        if self._use_pygame:
+            self._play_mp3()
+        elif HAS_WINSOUND:
+            self._play_winsound()
+        else:
             self._play_console_beeps()
-            return
-        
+            
+    def _play_mp3(self):
+        """Play MP3 using pygame."""
+        try:
+            import pygame
+            # Play loop indefinitely until time is up
+            pygame.mixer.music.play(loops=-1)
+            
+            # Wait loop to allow stopping
+            end_time = time.time() + self.duration_seconds
+            while time.time() < end_time and not self._stop_flag.is_set():
+                time.sleep(0.1)
+                
+            pygame.mixer.music.stop()
+            
+        except Exception as e:
+            print(f"[AUDIO] MP3 playback error: {e}")
+            # Fallback if MP3 fails mid-play
+            if HAS_WINSOUND:
+                self._play_winsound()
+
+    def _play_winsound(self):
+        """Fallback: winsound beeps."""
         end_time = time.time() + self.duration_seconds
         freq_index = 0
         
@@ -223,6 +264,13 @@ class AudioAlert:
     def stop(self):
         """Stop the alarm."""
         self._stop_flag.set()
+        if self._use_pygame:
+            try:
+                import pygame
+                pygame.mixer.music.stop()
+            except:
+                pass
+                
         if self._play_thread and self._play_thread.is_alive():
             self._play_thread.join(timeout=1)
         self._is_playing = False
@@ -383,9 +431,9 @@ class AlertManager:
     - All events are logged for audit
     """
     
-    def __init__(self, config_path: str = "data/alert_config.json", cooldown_seconds: int = 30):
+    def __init__(self, config_path: str = "data/alert_config.json", cooldown_seconds: int = 30, audio_duration: int = 10):
         self.config = AlertConfig(config_path)
-        self.audio = AudioAlert(duration_seconds=5)
+        self.audio = AudioAlert(duration_seconds=audio_duration)
         self.location = LocationService()
         self.email_alert = EmailAlert(self.config)
         self.logger = AlertLogger()

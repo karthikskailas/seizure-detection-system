@@ -31,7 +31,10 @@ def main():
     
     # Support modules
     logger = EventLogger()
-    alert_manager = AlertManager(cooldown_seconds=config.ALERT_COOLDOWN_SECONDS)
+    alert_manager = AlertManager(
+        cooldown_seconds=config.ALERT_COOLDOWN_SECONDS,
+        audio_duration=config.ALERT_SOUND_DURATION
+    )
     ui = Overlay()
     fps_control = FPSController(target_fps=config.FPS_ASSUMED)
 
