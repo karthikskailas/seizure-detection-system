@@ -1,5 +1,5 @@
 # config.py
-"""Seizure Detection System Configuration"""
+"""Seizure Detection System - Auto-Calibrated"""
 
 # Camera & Processing
 RESIZE_WIDTH = 320
@@ -7,30 +7,30 @@ FPS_ASSUMED = 30
 BUFFER_SECONDS = 3.0
 BUFFER_SIZE = int(FPS_ASSUMED * BUFFER_SECONDS)
 
-# Signal Processing
+# Signal Processing (Calibrated)
 MOTION_EMA_ALPHA = 0.2
 VELOCITY_SMOOTH_FRAMES = 5
 BASELINE_CALIBRATION_SECONDS = 0
 
-# Noise Gate
-MOTION_NOISE_FLOOR = 0.37
-ENERGY_NOISE_FLOOR = 11.8
+# Noise Gate (Calibrated)
+MOTION_NOISE_FLOOR = 0.05999999865889549
+ENERGY_NOISE_FLOOR = 2.0999999046325684
 
 # Fall Detection
 FALL_VELOCITY_THRESHOLD = 0.06
 FALL_CONFIRMATION_FRAMES = 4
 
-# Spectral Analysis
+# Spectral Analysis (Calibrated)
 FREQ_NORMAL_LOW = 0.1       
 FREQ_NORMAL_HIGH = 2.0
 FREQ_SEIZURE_LOW = 2.0
-FREQ_SEIZURE_HIGH = 6.5     
+FREQ_SEIZURE_HIGH = 7.0
 
-# Decision Logic
-MOTION_THRESHOLD = 0.70
-FALL_TRIGGER_SENSITIVITY = 0.7 
-DURATION_THRESHOLD = 20
-COOLDOWN_FRAMES = 120
+# Decision Logic (Calibrated)
+MOTION_THRESHOLD = 0.4
+FALL_TRIGGER_SENSITIVITY = 0.5 
+DURATION_THRESHOLD = 15
+COOLDOWN_FRAMES = 90
 
 # Foreground Isolation
 FG_HISTORY = 300              

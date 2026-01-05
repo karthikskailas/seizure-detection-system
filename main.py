@@ -1,20 +1,10 @@
 # main.py
-"""
-Seizure Detection System - Main Entry Point
---------------------------------------------
-Real-time video-based seizure detection using:
-- Person isolation (MOG2 background subtraction)
-- Motion physics engine (optical flow + FFT)
-- Fall detection (MediaPipe pose)
-
-This is an assistive alert system, not a medical diagnostic device.
-"""
-
 import cv2
 import sys
 import config
 from core.motion_analyzer import MotionAnalyzer
 from core.pose_analyzer import PoseAnalyzer
+from core.pose_velocity import PoseVelocityAnalyzer
 from core.decision_engine import DecisionEngine
 from core.event_logger import EventLogger
 from core.person_isolator import ForegroundIsolator
@@ -24,21 +14,18 @@ from utils.fps_controller import FPSController
 
 
 def main():
-    # ========================================
-    # 1. INITIALIZE MODULES
-    # ========================================
-    cap = cv2.VideoCapture(0)  # Use 0 for webcam, or 'path/to/video.mp4'
+    cap = cv2.VideoCapture(0)
     
-    # Handle camera open failure safely
     if not cap.isOpened():
-        print("ERROR: Could not open camera. Check connection and permissions.")
+        print("ERROR: Could not open camera.")
         sys.exit(1)
     
     # Core analysis engines
-    person_isolator = ForegroundIsolator()  # Locks onto foreground patient
-    motion_engine = MotionAnalyzer()        # Detects rhythmic shaking via FFT
-    pose_engine = PoseAnalyzer()            # Detects falls
-    brain = DecisionEngine()                # Makes final seizure decision
+    person_isolator = ForegroundIsolator()
+    motion_engine = MotionAnalyzer()
+    pose_engine = PoseAnalyzer()
+    pose_velocity = PoseVelocityAnalyzer()
+    brain = DecisionEngine()
     
     # Support modules
     logger = EventLogger()
@@ -47,107 +34,80 @@ def main():
     fps_control = FPSController(target_fps=config.FPS_ASSUMED)
 
     print("="* 50)
-    print("  SEIZURE DETECTION SYSTEM - MVP")
+    print("  SEIZURE DETECTION SYSTEM")
     print("="* 50)
     print(f"  Resolution: {config.RESIZE_WIDTH}px | Buffer: {config.BUFFER_SECONDS}s")
     print(f"  Seizure Band: {config.FREQ_SEIZURE_LOW}-{config.FREQ_SEIZURE_HIGH} Hz")
-    print(f"  Alert Cooldown: {config.ALERT_COOLDOWN_SECONDS}s")
+    print(f"  Motion Threshold: {config.MOTION_THRESHOLD}")
     print("  Press 'q' or ESC to exit.")
     print("="* 50)
 
-    # ========================================
-    # 2. MAIN PROCESSING LOOP
-    # ========================================
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
-            print("WARNING: Failed to read frame. Camera disconnected?")
+            print("WARNING: Failed to read frame.")
             break
 
-        # ----------------------------------------
-        # STEP 1: Person Isolation
-        # ----------------------------------------
-        # Lock onto the closest person (foreground patient)
+        # Person Isolation
         fg_bbox, fg_roi = person_isolator.get_foreground_roi(frame)
         
-        # Validate ROI size - if too small, use full frame
-        # This prevents analyzing tiny noise regions instead of actual person
         frame_area = frame.shape[0] * frame.shape[1]
         use_full_frame = True
         
         if fg_roi is not None and fg_roi.size > 100:
             roi_area = fg_roi.shape[0] * fg_roi.shape[1]
             roi_ratio = roi_area / frame_area
-            # Only use ROI if it's at least 5% of frame
             if roi_ratio >= config.MIN_ROI_RATIO:
                 analysis_frame = fg_roi
                 use_full_frame = False
         
         if use_full_frame:
             analysis_frame = frame
-            # Don't draw tiny/invalid bounding boxes
             if fg_bbox is not None:
                 bbox_area = fg_bbox[2] * fg_bbox[3]
                 if bbox_area / frame_area < config.MIN_ROI_RATIO:
-                    fg_bbox = None  # Clear invalid small box
+                    fg_bbox = None
         
-        # ----------------------------------------
-        # STEP 2: Motion Analysis (FFT Physics)
-        # ----------------------------------------
-        # Detects rhythmic shaking in the 2-7 Hz range
-        # Returns 0.0 if person is idle (noise gate active)
+        # Motion Analysis (Optical Flow + FFT)
         motion_score = motion_engine.get_motion_score(analysis_frame)
         
-        # ----------------------------------------
-        # STEP 3: Fall Detection (Pose Analysis)
-        # ----------------------------------------
-        # Uses MediaPipe to detect torso collapse
+        # Pose Analysis
         fall_detected, pose_landmarks = pose_engine.detect_fall(frame)
-
-        # ----------------------------------------
-        # STEP 4: Decision (The Brain)
-        # ----------------------------------------
-        # Combines motion + fall signals with temporal logic
-        is_seizure, debug_data = brain.process(motion_score, fall_detected)
         
-        # Add foreground info to debug data
-        debug_data['fg_bbox'] = fg_bbox
+        # Pose Velocity Analysis (Pattern Detection)
+        pose_pattern_score = 0.0
+        if pose_landmarks and pose_landmarks.pose_landmarks:
+            pose_velocity.update(pose_landmarks.pose_landmarks)
+            pose_pattern_score = pose_velocity.get_seizure_confidence()
+        
+        # Combined score: motion (60%) + pose pattern (40%)
+        combined_score = motion_score * 0.6 + pose_pattern_score * 0.4
 
-        # ----------------------------------------
-        # STEP 5: Act (Log & Alert)
-        # ----------------------------------------
+        # Decision
+        is_seizure, debug_data = brain.process(combined_score, fall_detected)
+        debug_data['fg_bbox'] = fg_bbox
+        debug_data['pose_pattern'] = pose_pattern_score
+
+        # Alert
         if is_seizure:
             logger.log_event(debug_data)
-            # Comprehensive alert system (audio + WhatsApp/Email)
             alert_manager.trigger_alert(debug_data)
 
-        # ----------------------------------------
-        # STEP 6: Visualize (UI Overlay)
-        # ----------------------------------------
-        display_frame = ui.draw_hud(frame, motion_score, is_seizure, fall_detected, debug_data)
+        # Visualize
+        display_frame = ui.draw_hud(frame, combined_score, is_seizure, fall_detected, debug_data)
+        person_isolator.draw_foreground_box(display_frame, fg_bbox, label="TARGET")
         
-        # Draw foreground person bounding box
-        person_isolator.draw_foreground_box(display_frame, fg_bbox, label="TARGET LOCKED")
-        
-        # Draw skeleton if available (optional debug)
         if pose_landmarks:
             ui.draw_skeleton(display_frame, pose_landmarks)
 
-        cv2.imshow('Seizure Detection System - MVP', display_frame)
+        cv2.imshow('Seizure Detection System', display_frame)
 
-        # ----------------------------------------
-        # STEP 7: Maintain FPS (Critical for FFT)
-        # ----------------------------------------
         fps_control.sync()
 
-        # Exit controls
         key = cv2.waitKey(1) & 0xFF
-        if key == ord('q') or key == 27:  # 'q' or ESC
+        if key == ord('q') or key == 27:
             break
 
-    # ========================================
-    # 3. CLEANUP
-    # ========================================
     cap.release()
     cv2.destroyAllWindows()
     print("\nSystem shutdown complete.")
