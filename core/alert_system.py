@@ -1,15 +1,4 @@
 # core/alert_system.py
-"""
-Alert System for Seizure Detection
------------------------------------
-Provides multi-channel alerting when seizures are detected:
-1. Local Audio Alarm (offline, non-blocking)
-2. WhatsApp Alert via Twilio (with location)
-3. Email Fallback via SMTP/Mailtrap
-
-This is an assistive alert tool, not a medical diagnostic system.
-"""
-
 import os
 import json
 import time
@@ -21,14 +10,12 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# Windows-specific audio
 try:
     import winsound
     HAS_WINSOUND = True
 except ImportError:
     HAS_WINSOUND = False
 
-# Cross-platform audio fallback
 try:
     import pygame
     pygame.mixer.init()
@@ -37,20 +24,11 @@ except ImportError:
     HAS_PYGAME = False
 
 
-# =============================================================================
-# CONFIGURATION MANAGER
-# =============================================================================
-
 class AlertConfig:
-    """
-    Manages alert configuration stored in JSON file.
-    Allows runtime editing of emergency contacts and preferences.
-    """
-    
     DEFAULT_CONFIG = {
-        "emergency_contact_email": "",
+        "emergency_contact_email":("",),
         "use_email": True,
-        "alert_message": "⚠️ ALERT: Possible seizure detected!",
+        "alert_message": "ALERT: Possible seizure detected",
         "location_enabled": True,
         "smtp_host": "sandbox.smtp.mailtrap.io",
         "smtp_port": 2525,
@@ -65,61 +43,40 @@ class AlertConfig:
         self.config = self._load_config()
     
     def _ensure_config_exists(self):
-        """Create default config file if it doesn't exist."""
         os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
         if not os.path.exists(self.config_path):
             with open(self.config_path, 'w') as f:
                 json.dump(self.DEFAULT_CONFIG, f, indent=2)
     
     def _load_config(self) -> dict:
-        """Load configuration from file."""
         try:
             with open(self.config_path, 'r') as f:
                 loaded = json.load(f)
-                # Merge with defaults to ensure all keys exist
                 return {**self.DEFAULT_CONFIG, **loaded}
         except (json.JSONDecodeError, FileNotFoundError):
             return self.DEFAULT_CONFIG.copy()
     
     def save(self):
-        """Save current configuration to file."""
         with open(self.config_path, 'w') as f:
             json.dump(self.config, f, indent=2)
     
     def get(self, key: str, default=None):
-        """Get configuration value."""
         return self.config.get(key, default)
     
     def set(self, key: str, value):
-        """Set configuration value and persist."""
         self.config[key] = value
         self.save()
 
 
-# =============================================================================
-# LOCATION SERVICE
-# =============================================================================
-
 class LocationService:
-    """
-    Fetches location information for alerts.
-    Uses IP-based geolocation (free API, no GPS required).
-    """
-    
-    # Free IP geolocation API (50K requests/month)
     IPINFO_URL = "https://ipinfo.io/json"
     
     def __init__(self):
         self._cached_location: Optional[Dict] = None
         self._cache_time: float = 0
-        self._cache_duration: float = 300  # Cache for 5 minutes
+        self._cache_duration: float = 300
     
     def get_location(self) -> Dict[str, Any]:
-        """
-        Get current location (IP-based).
-        Returns dict with city, region, country, coordinates.
-        """
-        # Return cached location if still valid
         if self._cached_location and (time.time() - self._cache_time) < self._cache_duration:
             return self._cached_location
         
@@ -134,7 +91,7 @@ class LocationService:
                 "country": data.get("country", "Unknown"),
                 "coordinates": data.get("loc", "Unknown"),
                 "ip": data.get("ip", "Unknown"),
-                "source": "IP-based (approximate)",
+                "source": "IP-based",
                 "timestamp": datetime.now().isoformat()
             }
             
@@ -142,36 +99,24 @@ class LocationService:
             self._cache_time = time.time()
             return location
             
-        except Exception as e:
+        except Exception:
             return {
                 "city": "Unknown",
                 "region": "Unknown",
                 "country": "Unknown",
                 "coordinates": "Unknown",
-                "source": f"Error: {str(e)}",
+                "source": "Error",
                 "timestamp": datetime.now().isoformat()
             }
     
     def format_for_message(self) -> str:
-        """Format location for alert message."""
         loc = self.get_location()
         if loc["city"] != "Unknown":
-            return f"📍 Location: {loc['city']}, {loc['region']}, {loc['country']} ({loc['source']})"
-        return "📍 Location: Unable to determine"
+            return f"Location: {loc['city']}, {loc['region']}, {loc['country']}"
+        return "Location: Unable to determine"
 
-
-# =============================================================================
-# AUDIO ALERT
-# =============================================================================
 
 class AudioAlert:
-    """
-    Plays loud audible alarm when seizure is detected.
-    Supports MP3 playback via pygame with winsound/console fallback.
-    Non-blocking implementation using threading.
-    """
-    
-    # Frequencies for alarm sound (Hz) for fallback
     ALARM_FREQUENCIES = [880, 1100, 880, 1100]
     TONE_DURATION_MS = 300
     MP3_PATH = "data/alert_sound.mp3"
@@ -183,23 +128,18 @@ class AudioAlert:
         self._play_thread: Optional[threading.Thread] = None
         self._use_pygame = False
         
-        # Initialize pygame mixer
         try:
             import pygame
             pygame.mixer.init()
             if os.path.exists(self.MP3_PATH):
                 pygame.mixer.music.load(self.MP3_PATH)
                 self._use_pygame = True
-                print(f"[AUDIO] MP3 alert loaded: {self.MP3_PATH}")
-            else:
-                print(f"[AUDIO] MP3 file not found at {self.MP3_PATH}, using fallback")
         except ImportError:
-            print("[AUDIO] pygame not installed, using fallback")
-        except Exception as e:
-            print(f"[AUDIO] pygame init failed: {e}, using fallback")
+            pass
+        except Exception:
+            pass
     
     def play(self):
-        """Play alarm sound (blocking)."""
         if self._use_pygame:
             self._play_mp3()
         elif HAS_WINSOUND:
@@ -208,27 +148,21 @@ class AudioAlert:
             self._play_console_beeps()
             
     def _play_mp3(self):
-        """Play MP3 using pygame."""
         try:
             import pygame
-            # Play loop indefinitely until time is up
             pygame.mixer.music.play(loops=-1)
             
-            # Wait loop to allow stopping
             end_time = time.time() + self.duration_seconds
             while time.time() < end_time and not self._stop_flag.is_set():
                 time.sleep(0.1)
                 
             pygame.mixer.music.stop()
             
-        except Exception as e:
-            print(f"[AUDIO] MP3 playback error: {e}")
-            # Fallback if MP3 fails mid-play
+        except Exception:
             if HAS_WINSOUND:
                 self._play_winsound()
 
     def _play_winsound(self):
-        """Fallback: winsound beeps."""
         end_time = time.time() + self.duration_seconds
         freq_index = 0
         
@@ -238,16 +172,14 @@ class AudioAlert:
             freq_index += 1
     
     def _play_console_beeps(self):
-        """Fallback: console beeps."""
         end_time = time.time() + self.duration_seconds
         while time.time() < end_time and not self._stop_flag.is_set():
             print("\a", end="", flush=True)
             time.sleep(0.5)
     
     def play_async(self):
-        """Play alarm sound in background thread (non-blocking)."""
         if self._is_playing:
-            return  # Already playing
+            return
         
         self._stop_flag.clear()
         self._is_playing = True
@@ -255,14 +187,12 @@ class AudioAlert:
         self._play_thread.start()
     
     def _async_play_worker(self):
-        """Worker thread for async playback."""
         try:
             self.play()
         finally:
             self._is_playing = False
     
     def stop(self):
-        """Stop the alarm."""
         self._stop_flag.set()
         if self._use_pygame:
             try:
@@ -280,27 +210,13 @@ class AudioAlert:
         return self._is_playing
 
 
-# =============================================================================
-# EMAIL ALERT (Mailtrap SMTP)
-# =============================================================================
-
 class EmailAlert:
-    """
-    Sends email notifications via SMTP (Mailtrap).
-    Simple, reliable alerting without complex API integrations.
-    """
-    
     def __init__(self, config: AlertConfig):
         self.config = config
         self._last_send_time = 0
-        self._min_interval = 30  # Minimum seconds between alerts
+        self._min_interval = 60
     
     def send_email(self, subject: str, body: str, to_email: str) -> bool:
-        """
-        Send email via SMTP (Mailtrap or other provider).
-        
-        Returns True if successful, False otherwise.
-        """
         smtp_host = self.config.get("smtp_host")
         smtp_port = self.config.get("smtp_port")
         smtp_user = self.config.get("smtp_username")
@@ -308,7 +224,6 @@ class EmailAlert:
         from_email = self.config.get("email_from")
         
         if not all([smtp_host, smtp_user, smtp_pass, to_email]):
-            print("[EMAIL] Missing SMTP credentials or recipient email")
             return False
         
         try:
@@ -323,45 +238,31 @@ class EmailAlert:
                 server.login(smtp_user, smtp_pass)
                 server.send_message(msg)
             
-            print(f"[EMAIL] Message sent successfully to {to_email}")
             return True
             
-        except Exception as e:
-            print(f"[EMAIL] Error: {str(e)}")
+        except Exception:
             return False
     
     def send_alert(self, detection_data: dict, location_info: str) -> bool:
-        """
-        Send alert via WhatsApp (primary) with Email fallback.
-        
-        Returns True if any notification was sent successfully.
-        """
-        # Rate limiting
         if time.time() - self._last_send_time < self._min_interval:
-            print("[EMAIL] Rate limited - skipping alert")
             return False
         
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         risk_score = detection_data.get("risk", 0)
         
-        # Compose email body
         message = f"""
 {self.config.get("alert_message")}
 
-🕐 Time: {timestamp}
-📊 Confidence: {int(risk_score * 100)}%
+Time: {timestamp}
+Confidence: {int(risk_score * 100)}%
 {location_info}
-
-This is an automated alert from the Seizure Detection System.
-Please check on the patient immediately.
         """.strip()
         
-        # Send email alert
         if self.config.get("use_email", True):
             email = self.config.get("emergency_contact_email")
             if email:
                 success = self.send_email(
-                    subject="🚨 SEIZURE ALERT - Immediate Attention Required",
+                    subject="SEIZURE ALERT - Immediate Attention Required",
                     body=message,
                     to_email=email
                 )
@@ -370,11 +271,9 @@ Please check on the patient immediately.
                     self._last_send_time = time.time()
                 return success
         
-        print("[EMAIL] No email configured or email alerts disabled")
         return False
     
     def send_async(self, detection_data: dict, location_info: str):
-        """Send alert in background thread (non-blocking)."""
         thread = threading.Thread(
             target=self.send_alert,
             args=(detection_data, location_info),
@@ -383,26 +282,16 @@ Please check on the patient immediately.
         thread.start()
 
 
-# =============================================================================
-# ALERT LOGGER
-# =============================================================================
-
 class AlertLogger:
-    """
-    Logs all alert events for audit trail.
-    Separate from EventLogger to track alert-specific data.
-    """
-    
     def __init__(self, log_dir: str = "data/logs"):
         self.log_dir = log_dir
         os.makedirs(log_dir, exist_ok=True)
         self.log_file = os.path.join(log_dir, "alerts.json")
     
     def log_alert(self, alert_type: str, detection_data: dict, location: dict, success: bool):
-        """Log an alert event."""
         event = {
             "timestamp": datetime.now().isoformat(),
-            "alert_type": alert_type,  # "audio", "whatsapp", "email"
+            "alert_type": alert_type,
             "success": success,
             "confidence_score": detection_data.get("risk", 0),
             "location": location,
@@ -412,25 +301,11 @@ class AlertLogger:
         try:
             with open(self.log_file, 'a') as f:
                 f.write(json.dumps(event) + "\n")
-        except Exception as e:
-            print(f"[ALERT_LOG] Error writing log: {e}")
+        except Exception:
+            pass
 
-
-# =============================================================================
-# ALERT MANAGER (Main Orchestrator)
-# =============================================================================
 
 class AlertManager:
-    """
-    Main alert system orchestrator.
-    
-    Manages all alert channels and ensures:
-    - Alerts trigger only once per seizure event (cooldown)
-    - Audio alerts are non-blocking
-    - Email alerts via Mailtrap
-    - All events are logged for audit
-    """
-    
     def __init__(self, config_path: str = "data/alert_config.json", cooldown_seconds: int = 30, audio_duration: int = 10):
         self.config = AlertConfig(config_path)
         self.audio = AudioAlert(duration_seconds=audio_duration)
@@ -443,97 +318,25 @@ class AlertManager:
         self._alert_count: int = 0
     
     def can_trigger(self) -> bool:
-        """Check if enough time has passed since last alert."""
         return (time.time() - self._last_alert_time) >= self.cooldown_seconds
     
     def trigger_alert(self, detection_data: dict) -> bool:
-        """
-        Trigger all configured alerts.
-        
-        This is the main entry point called from main.py when seizure is detected.
-        
-        Args:
-            detection_data: Dict containing 'risk', 'status', 'counter' from DecisionEngine
-            
-        Returns:
-            True if alerts were triggered, False if cooldown prevented triggering
-        """
         if not self.can_trigger():
-            remaining = self.cooldown_seconds - (time.time() - self._last_alert_time)
-            print(f"[ALERT] Cooldown active ({remaining:.0f}s remaining)")
             return False
         
         self._last_alert_time = time.time()
         self._alert_count += 1
         
-        print(f"\n{'='*50}")
-        print(f"  🚨 ALERT #{self._alert_count} TRIGGERED")
-        print(f"{'='*50}")
+        print(f"\nALERT #{self._alert_count} TRIGGERED")
         
-        # Get location info
         location = self.location.get_location()
         location_str = self.location.format_for_message()
         
-        # 1. Audio Alert (non-blocking)
-        print("[ALERT] Starting audio alarm...")
         self.audio.play_async()
         self.logger.log_alert("audio", detection_data, location, True)
         
-        # 2. Email Alert via Mailtrap (non-blocking)
         if self.config.get("emergency_contact_email"):
-            print("[ALERT] Sending email notification...")
             self.email_alert.send_async(detection_data, location_str)
             self.logger.log_alert("email", detection_data, location, True)
-        else:
-            print("[ALERT] No email configured - skipping email alert")
         
         return True
-    
-    def stop_audio(self):
-        """Manually stop the audio alarm."""
-        self.audio.stop()
-    
-    def reset(self):
-        """Reset alert state (useful for testing)."""
-        self._last_alert_time = 0
-        self._alert_count = 0
-        self.audio.stop()
-    
-    def get_status(self) -> dict:
-        """Get current alert system status."""
-        return {
-            "alerts_triggered": self._alert_count,
-            "cooldown_active": not self.can_trigger(),
-            "audio_playing": self.audio.is_playing,
-            "last_alert_time": datetime.fromtimestamp(self._last_alert_time).isoformat() if self._last_alert_time else None,
-            "email_configured": bool(self.config.get("emergency_contact_email")),
-        }
-
-
-# =============================================================================
-# TEST / DEMO
-# =============================================================================
-
-if __name__ == "__main__":
-    print("=" * 50)
-    print("  ALERT SYSTEM TEST")
-    print("=" * 50)
-    
-    # Initialize
-    manager = AlertManager()
-    
-    # Show status
-    print("\nSystem Status:")
-    for key, value in manager.get_status().items():
-        print(f"  {key}: {value}")
-    
-    # Test audio
-    print("\n[TEST] Playing audio alarm for 3 seconds...")
-    manager.audio.duration_seconds = 3
-    manager.audio.play()
-    
-    # Test location
-    print("\n[TEST] Fetching location...")
-    print(manager.location.format_for_message())
-    
-    print("\n[TEST] Complete!")

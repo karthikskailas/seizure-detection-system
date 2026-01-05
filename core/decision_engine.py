@@ -36,37 +36,31 @@ class DecisionEngine:
         detection_type = None
         reason = None
         
-        # RULE 1: Violent head shaking + facial distortion (very specific)
         if head_shake > 0.7 and facial_distortion > 0.6 and motion_score > 0.3:
             risk_score = 0.95
             detection_type = "CLONIC"
             reason = "Head shake + face distortion"
             
-        # RULE 2: Tonic - rigid + mouth open + low motion
         elif is_rigid and mouth_open and motion_score < 0.3:
             risk_score = 0.9
             detection_type = "TONIC"
             reason = "Rigid + mouth open"
             
-        # RULE 3: Atonic - fall + sudden motion drop
         elif is_fallen and self._detect_motion_drop():
             risk_score = 0.95
             detection_type = "ATONIC"
             reason = "Fall + motion drop"
             
-        # RULE 4: Clonic - high motion + high tremor (both required)
         elif motion_score > 0.6 and tremor_score > 0.5:
             risk_score = 0.8
             detection_type = "CLONIC"
             reason = "Motion + tremor"
             
-        # RULE 5: Silent tonic
         elif motion_score < 0.2 and is_rigid and is_fallen:
             risk_score = 0.8
             detection_type = "TONIC"
             reason = "Low motion + rigid + fallen"
         
-        # Everything else = low risk (no alert)
         else:
             risk_score = min(0.3, motion_score * 0.4)
         
@@ -87,16 +81,14 @@ class DecisionEngine:
         
         self.risk_history.append(risk_score)
         
-        # Display timer
         if self.display_timer > 0:
             self.display_timer -= 1
             return False, {
-                "status": f"🚨 {self.last_trigger_reason}",
+                "status": f"ALERT {self.last_trigger_reason}",
                 "risk": risk_score, "counter": 0,
                 "type": self.last_trigger_reason, "reason": reason
             }
         
-        # Cooldown
         if self.cooldown_timer > 0:
             self.cooldown_timer -= 1
             return False, {
@@ -104,13 +96,11 @@ class DecisionEngine:
                 "counter": 0, "type": None, "reason": None
             }
         
-        # Track high risk streak
         if risk_score >= 0.8:
             self.high_risk_streak += 1
         else:
             self.high_risk_streak = max(0, self.high_risk_streak - 2)
         
-        # Counter logic
         if risk_score >= 0.8 and detection_type:
             self.consecutive_frames += 1
         elif risk_score >= 0.5:
@@ -118,11 +108,8 @@ class DecisionEngine:
         else:
             self.consecutive_frames = max(0, self.consecutive_frames - 1)
         
-        # TRIGGER: Need sustained high risk
-        # Require 15+ consecutive high-risk frames (~0.5 seconds at 30fps)
         trigger_threshold = 15
         
-        # OR immediate trigger if 10+ frames of 80%+ risk in last 20 frames
         recent_high = sum(1 for r in self.risk_history if r >= 0.8)
         
         should_trigger = (
@@ -139,7 +126,7 @@ class DecisionEngine:
             self.high_risk_streak = 0
             
             return True, {
-                "status": f"🚨 {self.last_trigger_reason} DETECTED",
+                "status": f"ALERT {self.last_trigger_reason} DETECTED",
                 "risk": risk_score, "counter": 0,
                 "type": self.last_trigger_reason, "reason": reason,
                 "alert_num": self.alert_count

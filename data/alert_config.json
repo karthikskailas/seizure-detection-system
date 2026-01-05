@@ -3,7 +3,7 @@
   "emergency_contact_email": "alfootballer@gmail.com",
   "use_whatsapp": true,
   "use_email_fallback": true,
-  "alert_message": "\u26a0\ufe0f ALERT: Possible seizure detected!",
+  "alert_message": "ALERT: Possible seizure detected",
   "location_enabled": true,
   "twilio_account_sid": "",
   "twilio_auth_token": "",

@@ -1,0 +1,1 @@
+{"timestamp": "2026-01-05T11:11:31.933319", "risk_score": 0.95, "status": "SEIZURE_DETECTED", "metadata": {"status": "ALERT CLONIC DETECTED", "risk": 0.95, "counter": 0, "type": "CLONIC", "reason": "Head shake + face distortion", "alert_num": 1, "fg_bbox": [308, 312, 56, 62], "head_shake": 0.8250000000000001, "face_detected": true}}
