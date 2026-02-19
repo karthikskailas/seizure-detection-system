@@ -184,3 +184,6 @@ As outlined in our documentation standards, a clear roadmap and structured logic
 
 
 > **Disclaimer:** This system is an assistive alert tool designed to support caregivers and monitoring staff; it is not a medical diagnostic device.
+
+
+karthikskailas
